@@ -103,9 +103,6 @@ body {
   border-radius: 6px;
   z-index: 2;
 }
-.content.active .box.imgbox {
-  background: rgb(156 171 226 / 15%);
-}
 .content .box.imgbox img {
   -webkit-app-region: drag;
   display: block;
