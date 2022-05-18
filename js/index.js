@@ -8,7 +8,11 @@ let { ipcRenderer } = require('electron')
 // 定义基本变量
 var img = document.getElementById("simg");
 let titleBar = document.getElementById("gbtitle");
-
+// 图片拖放功能实现
+let ctInfo = document.getElementById("ctinfo");
+let content = document.getElementsByClassName("content")[0]
+let dfContentTips = "拖动图片到此处"
+let errContentTips = "错误：不支持的格式"
 
 // 重置窗口基本属性
 // remote.getCurrentWindow().setAlwaysOnTop(false);
@@ -73,9 +77,7 @@ function scaleImg(n) {
   console.log("========修改图片尺寸完成========")
 }
 
-// 图片拖放功能实现
-let ctInfo = document.getElementById("ctinfo");
-let content = document.getElementsByClassName("content")[0]
+
 
 function dragStart(e) {
   e.dataTransfer.setData("id", e.target.id);//将img的id写入
@@ -91,7 +93,7 @@ function dragOver(e) {
 function dragLeave() {
   console.log("++++已离开合适位置++++");
   var ctInfo = document.getElementById("ctinfo");
-  ctInfo.innerHTML = "拖动图片到此处";
+  ctInfo.innerHTML = dfContentTips;
   content.className = "content"
 }
 function drop(e) {
@@ -104,7 +106,6 @@ function drop(e) {
 
 function picture(e) {
   e.preventDefault();//阻止拖拽结束的默认行为，会把文件作为链接打开。
-  document.getElementById("app").className = "wrapper showimg";
   let imgwrapper = document.querySelector("#img1");
   var id = e.target.id;//得到div的id
   let img = document.querySelector("#simg");
@@ -114,30 +115,40 @@ function picture(e) {
   fileReader.readAsDataURL(file);//将file读为url
   fileReader.fileName = file.name;
   var imgdom = document.createElement("img");
-  if(img == null){
-    fileReader.onload = function (ev) {//为div添加一个图片，图片路径为拖拽的文件路径
-      imgdom.src = fileReader.result;
-      imgdom.setAttribute("id", "simg");
-      imgdom.setAttribute("ondragstart", "'return false;'");
-      imgdom.setAttribute("onselectstart", "'return false;'");
-      box.appendChild(imgdom);
+  fileReader.onload = function (ev) {
+    let gbFileName = ev.target.fileName;
+    // 首先判断文件类型是否合法，合法则继续执行显示图片操作，否则报错
+    var strRegex = "(.jpg|.png|.jpeg)$"; //用于验证图片扩展名的正则表达式
+    var re = new RegExp(strRegex);
+    if (re.test(gbFileName.toLowerCase())) {
+      console.log(`可接受的图片文件：${gbFileName}`);
+      document.getElementById("app").className = "wrapper showimg";
       // 设定标题栏为文件名
-      let gbFileName = ev.target.fileName;
       titleBar.innerText = gbFileName;
-      // 加载专有右键菜单
-      contextMenu('imgViewTemplate');
+      //判断是否有图片，无则为div添加一个图片，图片路径为拖拽的文件路径，有则替换
+      if (img == null) {
+        imgdom.src = fileReader.result;
+        imgdom.setAttribute("id", "simg");
+        imgdom.setAttribute("ondragstart", "'return false;'");
+        imgdom.setAttribute("onselectstart", "'return false;'");
+        box.appendChild(imgdom);
+        // 加载专有右键菜单
+        contextMenu('imgViewTemplate');
+      } else {
+        console.log("已有图片")
+        img.src = fileReader.result;
+        console.log(img.naturalWidth + " " + img.naturalHeight);
+      }
+    } else {
+      content.className = "content";
+      ctInfo.innerHTML = `<span style=color:#d62bdb>${errContentTips}</span>`;
+      setTimeout(() => {
+        ctInfo.innerHTML = dfContentTips;
+      }, 2000);
+      console.log("文件名不合法,接受jpg,png,jpeg格式");
     }
-  } else {
-    console.log("已有图片")
-    fileReader.onload = function (ev) {
-      img.src = fileReader.result;
-      console.log(img.naturalWidth + " " + img.naturalHeight);
-      // 设定标题栏为文件名
-      let gbFileName = ev.target.fileName;
-      titleBar.innerText = gbFileName;
-    }
+
   }
-  
   console.log("++++已执行 picture 函数++++");
 }
 
@@ -165,6 +176,7 @@ window.onresize = function() {
     }
   }
 }
+
 
 /*
 ======== 全局菜单 ========
