@@ -7,12 +7,9 @@ If you are an artist, maybe it will be useful to you.
 
 
 ## preview
-     
-![preview-01](assets/preview-01.png  | width=420)
 
-![preview-03](assets/preview-03.png | width=347)
+<img src="assets/preview-01@2x.png" width=420 >
 
-![preview-02](assets/preview-02.png | width=778)
 
 
 Based on *Electron*.
