@@ -15,7 +15,7 @@
             <button id="wcl" onclick="remote.getCurrentWindow().close()">关</button>
             <button id="wmin" onclick="remote.getCurrentWindow().minimize()">小</button>
           </div>
-          <div class="span">
+          <div class="title span" id="gbtitle">
             Plankton
           </div>
           <div class="setting">
@@ -26,16 +26,16 @@
           <div class="info" id="ctinfo">
             拖动图片到此处
           </div>
-          <div id="img1" class="box imgbox" ondragover="dragOver(event)" ondrop="picture(event)" ondragleave="dragLeave()"></div>
-          <svg width="366" height="235" viewBox="0 0 366 235" xmlns="http://www.w3.org/2000/svg"
+          <div id="img1" class="box imgbox" ondragover="dragOver(event)" ondragleave="dragLeave()"></div>
+          <svg width="370" height="240" viewBox="0 0 370 240" xmlns="http://www.w3.org/2000/svg"
             xmlns:xlink="http://www.w3.org/1999/xlink">
             <defs>
               <linearGradient x1="3.683%" y1="29.976%" x2="91.962%" y2="67.567%" id="b">
                 <stop stop-color="#7777F7" offset="0%" />
                 <stop stop-color="#C896F6" offset="100%" />
               </linearGradient>
-              <rect id="a" width="366" height="235" rx="4" />
-              <mask id="c" x="0" y="0" width="366" height="235" fill="#fff">
+              <rect id="a" width="370" height="240" rx="4" />
+              <mask id="c" x="0" y="0" width="370" height="240" fill="#fff">
                 <use xlink:href="#a" />
               </mask>
             </defs>

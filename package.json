@@ -1,18 +1,63 @@
 {
   "name": "plankton",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.2",
+  "description": "A simple desktop artboard to preview groups of pictures on the desktop. If you are an artist, maybe it will be useful to you.",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron ."
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^10.1.1"
+    "@electron-forge/cli": "^6.0.0-beta.63",
+    "@electron-forge/maker-deb": "^6.0.0-beta.63",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.63",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.63",
+    "@electron-forge/maker-zip": "^6.0.0-beta.63",
+    "electron": "^18.2.3"
   },
   "dependencies": {
-
+    "@electron/remote": "^2.0.8",
+    "electron-squirrel-startup": "^1.0.0",
+    "konva": "^8.3.8"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Snowpee/ManRay.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/Snowpee/ManRay/issues"
+  },
+  "homepage": "https://github.com/Snowpee/ManRay#readme",
+  "config": {
+    "forge": {
+      "packagerConfig": {},
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "plankton"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
   }
 }

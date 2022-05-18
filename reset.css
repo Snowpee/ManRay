@@ -1,26 +1,46 @@
-* {
+/* 定义一下行为 */
+
+/* 样式 */
+html,
+body,
+div,
+ul,
+ol,
+li,
+span,
+i,
+img {
   margin: 0;
   padding: 0;
+  user-select: none;
 }
 html {
   height: 100%;
+  --gbshadow-1: 2px 2px 8px rgb(36 0 234 / 0.1), -2px 2px 8px rgb(234 0 227 / 10%), 0 0 0 1px rgba(0,0,0,0.03);
   /* box-shadow: 0 0 0 1px rgba(0,0,0,0.5) inset; */
 }
 body {
   overflow: hidden;
   font-size: 14px;
   -webkit-app-region: drag;
+  height: 100%;
 }
+/* 根样式 */
+
+/* 其它样式 */
 .wrapper {
   overflow: hidden;
-  width: 422px;
-  height: 318px;
-  background: url(img/bg.svg) center 0 transparent no-repeat;
+  width: 420px;
+  height: 320px;
+  /* background: url(img/bg.svg) center 0 transparent no-repeat; */
   box-sizing: border-box;
-  padding: 5px 11px 13px;
+  padding: 5px 10px 10px;
 }
 .container {
   height: 100%;
+  background-color: white;
+  box-shadow: var(--gbshadow-1);
+  border-radius: 16px;
 }
 .content {
   height: calc(100% - 48px);
@@ -35,16 +55,18 @@ body {
   user-select: none;
   font-size: 14px;
   position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .titlebar.gb .actions {
   position: absolute;
-  left: 17px;
+  left: 15px;
 }
 .titlebar.gb .actions #wcl,
 .titlebar.gb .actions #wmin {
   width: 13px;
   height: 13px;
-  margin-top: 17px;
   margin-right: 10px;
   display: block;
   float: left;
@@ -65,7 +87,7 @@ body {
 .titlebar.gb .actions:hover #wmin:active {
   background-position-y: -60px;
 }
-.titlebar.gb .span {
+.titlebar.gb .title {
   display: inline;
   font-family: DINPro;
   font-weight: bolder;
@@ -78,8 +100,12 @@ body {
   width: 500px;
   height: auto;
 }
-.content * {
-  transition: 0.2s ease-in-out background-color, 0.15s ease-in-out width, 0.15s ease-in-out height, 0.15s ease-in-out border-color, 0.3s ease-in-out transform;
+* {
+  transition: .2s ease-in-out background-color, 
+              .1s ease-in-out width, 
+              .1s ease-in-out height, 
+              .1s ease-in-out border-color, 
+              .1s ease-in-out opacity;
   box-sizing: border-box;
 }
 .content .info {
@@ -93,9 +119,9 @@ body {
   background-image: url(img/01-active.svg);
 }
 .content .box.imgbox {
-  width: calc(100% - 17px * 2);
-  height: calc(100% - 17px);
-  margin: 0 17px;
+  width: calc(100vw - 15px * 2 - 20px);
+  height: calc(100vh - 15px);
+  margin: 0 15px;
   position: absolute;
   top: 0;
   overflow: auto;
@@ -104,13 +130,26 @@ body {
   z-index: 2;
 }
 .content .box.imgbox img {
-  -webkit-app-region: drag;
+  -webkit-user-drag: none; /*禁止拖动图片，否则会响应浏览器拖图事件*/ 
   display: block;
+}
+
+/*给图片上盖一层透明层，供拖动用*/ 
+.wrapper.showimg .content .box.imgbox::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 9;
+  -webkit-app-region: drag;
 }
 .content svg {
   opacity: 0.4;
   position: absolute;
-  left: 17px;
+  left: 15px;
   top: 0;
   z-index: 1;
 }
@@ -122,30 +161,67 @@ body {
 }
 /* 显示图片时 */
 .wrapper.showimg {
-  width: auto;
-  padding: 0;
+  width: 100%;
+  height: 100%;
   background: none;
   overflow: auto;
+  border-radius: 0;
+  padding: 0;
+}
+.wrapper.showimg .container {
+  background-color: transparent;
+  box-shadow: none;
 }
 .wrapper.showimg .content {
-  height: auto;
+  height: 100%;
 }
 .wrapper.showimg .content .box.imgbox {
   border: 0 none;
 }
 .wrapper.showimg .content .box.imgbox img {
   transform: scale(1);
+  transform-origin: top left;
 }
 .wrapper.showimg .content > *:not(.imgbox) {
   display: none;
 }
 .wrapper.showimg .titlebar.gb {
-  display: none;
+    position: absolute;
+    z-index: 9999;
+    background: rgba(255,255,255,.8);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    box-shadow: var(--gbshadow-1);
+    height: 28px;
+    border-radius: 14px;
+    left: 15px;
+    top: 10px;
+    width: calc(100% - 30px);
+    /* transform: translateY(-80px); */
+    opacity: 0;
+    height: 0;
+}
+.wrapper.showimg .titlebar.gb .title {
+  font-weight: normal;
+  letter-spacing: 0;
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap;
+  width: calc(100% - 110px);
+}
+.wrapper.showimg .titlebar.gb .actions {
+  left: 8px;
+}
+.wrapper.showimg:hover .titlebar.gb {
+  /* transform: translateY(0); */
+  opacity: 1;
+  height: 28px;
 }
 .wrapper.showimg .box.imgbox {
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
   margin: 0;
+  border-radius: 0;
+  /* overflow: hidden; */
 }
 @keyframes dash {
   from {
