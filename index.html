@@ -17,7 +17,7 @@
             <button id="wmin" onclick="remote.getCurrentWindow().minimize()">小</button>
           </div>
           <div class="title span" id="gbtitle">
-            Plankton
+            PlankTon
           </div>
           <div class="setting">
 
@@ -25,25 +25,34 @@
         </div>
         <div class="content">
           <div class="info" id="ctinfo">
-            拖动图片到此处
+            拖动图片到此处，或点击选择文件
           </div>
-          <div id="img1" class="box imgbox" ondragover="dragOver(event)" ondragleave="dragLeave()"></div>
-          <svg width="370" height="240" viewBox="0 0 370 240" xmlns="http://www.w3.org/2000/svg"
-            xmlns:xlink="http://www.w3.org/1999/xlink">
-            <defs>
-              <linearGradient x1="3.683%" y1="29.976%" x2="91.962%" y2="67.567%" id="b">
-                <stop stop-color="#7777F7" offset="0%" />
-                <stop stop-color="#C896F6" offset="100%" />
-              </linearGradient>
-              <rect id="a" width="370" height="240" rx="4" />
-              <mask id="c" x="0" y="0" width="370" height="240" fill="#fff">
-                <use xlink:href="#a" />
-              </mask>
-            </defs>
-            <use stroke="url(#b)" mask="url(#c)" stroke-width="2" xlink:href="#a" fill="none" fill-rule="evenodd"
-              stroke-dasharray="4,4" />
-          </svg>
+          <label id="img1" class="box imgbox" for="upimg" ondragover="dragOver(event)" ondragleave="dragLeave()"></label>
+          <div class="btngrp upload">
+            <!-- <label class="btn upload-btn" for="upimg"> 上传文件 </label> -->
+            <input type="file" accept="image/*" id="upimg" value="点击上传" />
+          </div>
+          <div class="bgimg">
+            <svg width="370" height="240" viewBox="0 0 370 240" xmlns="http://www.w3.org/2000/svg"
+              xmlns:xlink="http://www.w3.org/1999/xlink">
+              <defs>
+                <linearGradient x1="3.683%" y1="29.976%" x2="91.962%" y2="67.567%" id="b">
+                  <stop stop-color="#7777F7" offset="0%" />
+                  <stop stop-color="#C896F6" offset="100%" />
+                </linearGradient>
+                <rect id="a" width="370" height="240" rx="4" />
+                <mask id="c" x="0" y="0" width="370" height="240" fill="#fff">
+                  <use xlink:href="#a" />
+                </mask>
+              </defs>
+              <use stroke="url(#b)" mask="url(#c)" stroke-width="2" xlink:href="#a" fill="none" fill-rule="evenodd"
+                stroke-dasharray="4,4" />
+            </svg>
+          </div>
         </div>
+      </div>
+      <div class="dialog popup">
+        <div class="notif inner" id="notif" data-notif-type=""></div>
       </div>
     </div>
     <script src="js/index.js"></script>

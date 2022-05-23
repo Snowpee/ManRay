@@ -8,14 +8,12 @@ let { ipcRenderer } = require('electron')
 // 定义基本变量
 var img = document.getElementById("simg");
 let titleBar = document.getElementById("gbtitle");
-// 图片拖放功能实现
 let ctInfo = document.getElementById("ctinfo");
 let content = document.getElementsByClassName("content")[0]
-let dfContentTips = "拖动图片到此处"
+let dfContentTips = document.getElementById("ctinfo").innerHTML;
 let errContentTips = "错误：不支持的格式"
 
 // 重置窗口基本属性
-// remote.getCurrentWindow().setAlwaysOnTop(false);
 rsWindow(420, 320);
 
 // 重置titlebar
@@ -56,8 +54,8 @@ function clCanvas() {
    img.height = h;
    rsWindow(w, h);
  }
-// 改变图片比例，注意是按原始尺寸计算的比例
 
+// 改变图片比例，注意是按原始尺寸计算的比例
 function scaleImg(n) {
   let img = document.querySelector("#simg");
   console.log("执行图片缩放后图片宽高：" + img.width + ", " + img.height)
@@ -77,8 +75,48 @@ function scaleImg(n) {
   console.log("========修改图片尺寸完成========")
 }
 
+// 放大，缩小图片
+var number = 0;
+function zoomImg(type, elemId) {
+  return function () {
+    var elem = document.getElementById(elemId);
+    switch (type) {
+      case 'add':
+        elem.setAttribute("data-zoom", ++number);
+        break;
+      case 'minus':
+        elem.setAttribute("data-zoom", --number);
+        break;
+      case 'actual':
+        number = Math.pow(number, 0) - 1; //  变量中的将 number 归零
+        elem.setAttribute("data-zoom", number);
+        // var number = 0; // 此时重设内存中此变量值
+        break;
+    }
+    let dataZoom = elem.getAttribute("data-zoom");
+    console.log(elem.getAttribute("data-zoom"));
+    // 判断 zoom 参数，放大缩小使用不同的函数曲线
+    if (parseInt(dataZoom) >= 0) {
+      // 正比例函数曲线，可无限放大
+      var newNumber = parseInt(dataZoom) / 2 + 1;
+    } else {
+      // 反比例函数，防止出现负数等情况
+      var newNumber = 1 / (- parseInt(dataZoom) / 2 + 1);
+    }
+    elem.setAttribute("style", `transform: scale(${newNumber})`);
+    elem.setAttribute("data-zoom", newNumber);
+    let viewWidth = Math.round(elem.width * newNumber);
+    let viewHeight = Math.round(elem.height * newNumber);
+    // console.log(viewWidth, viewHeight)
+    rsWindow(viewWidth, viewHeight);
+    
+  }
+}
+var zoomIn = zoomImg("add", "simg");
+var zoomOut = zoomImg("minus", "simg");
+var zoomActual = zoomImg("actual", "simg");
 
-
+// 拖动事件相关
 function dragStart(e) {
   e.dataTransfer.setData("id", e.target.id);//将img的id写入
 }
@@ -103,51 +141,61 @@ function drop(e) {
   div.appendChild(img);//将img加入div
   console.log("++++这是++++");
 }
+// 图片进入后的操作
+function loadImage(fileDataUrl, gbFileName) {
+  // 首先判断文件类型是否合法，合法则继续执行显示图片操作，否则报错
+  var strRegex = "(.jpg|.png|.jpeg)$"; //用于验证图片扩展名的正则表达式
+  var imgdom = document.createElement("img");
+  var re = new RegExp(strRegex);
+  // if (re.test(gbFileName.toLowerCase())) {
+    console.log(`可接受的图片文件：${gbFileName}`);
+    document.getElementById("app").className = "wrapper showimg";
+    let img = document.querySelector("#simg");
+    var box = document.getElementById("img1");//通过id得到div
+    // 设定标题栏为文件名
+    titleBar.innerText = gbFileName;
+    //判断是否有图片，无则为div添加一个图片，图片路径为拖拽的文件路径，有则替换
+    if (img == null) {
+      imgdom.src = fileDataUrl;
+      imgdom.setAttribute("id", "simg");
+      box.appendChild(imgdom);
+      // 加载专有右键菜单
+      contextMenu('imgViewTemplate');
+    } else {
+      console.log("已有图片")
+      img.src = fileDataUrl;
+    }
+    imgdom.onload = () => {
+      console.log(imgdom.width + " " + imgdom.height);
+      rsWindow(imgdom.width, imgdom.height);
+      box.setAttribute("for", "");
+    }
+  // } else {
+  //   content.className = "content";
+  //   toast('error', errContentTips);
+  //   ctInfo.innerHTML = dfContentTips;
+  // }
+}
 
+// 图片创建与替换相关
 function picture(e) {
   e.preventDefault();//阻止拖拽结束的默认行为，会把文件作为链接打开。
-  let imgwrapper = document.querySelector("#img1");
-  var id = e.target.id;//得到div的id
-  let img = document.querySelector("#simg");
-  var box = document.getElementById(id);//通过id得到div
   var file = e.dataTransfer.files[0];//得到文件
   var fileReader = new FileReader();
   fileReader.readAsDataURL(file);//将file读为url
   fileReader.fileName = file.name;
-  var imgdom = document.createElement("img");
-  fileReader.onload = function (ev) {
-    let gbFileName = ev.target.fileName;
-    // 首先判断文件类型是否合法，合法则继续执行显示图片操作，否则报错
-    var strRegex = "(.jpg|.png|.jpeg)$"; //用于验证图片扩展名的正则表达式
-    var re = new RegExp(strRegex);
-    if (re.test(gbFileName.toLowerCase())) {
-      console.log(`可接受的图片文件：${gbFileName}`);
-      document.getElementById("app").className = "wrapper showimg";
-      // 设定标题栏为文件名
-      titleBar.innerText = gbFileName;
-      //判断是否有图片，无则为div添加一个图片，图片路径为拖拽的文件路径，有则替换
-      if (img == null) {
-        imgdom.src = fileReader.result;
-        imgdom.setAttribute("id", "simg");
-        imgdom.setAttribute("ondragstart", "'return false;'");
-        imgdom.setAttribute("onselectstart", "'return false;'");
-        box.appendChild(imgdom);
-        // 加载专有右键菜单
-        contextMenu('imgViewTemplate');
-      } else {
-        console.log("已有图片")
-        img.src = fileReader.result;
-        console.log(img.naturalWidth + " " + img.naturalHeight);
-      }
-    } else {
-      content.className = "content";
-      ctInfo.innerHTML = `<span style=color:#d62bdb>${errContentTips}</span>`;
-      setTimeout(() => {
-        ctInfo.innerHTML = dfContentTips;
-      }, 2000);
-      console.log("文件名不合法,接受jpg,png,jpeg格式");
-    }
 
+  // 非图片则不执行，返回 false
+  if (!/image\/\w+/.test(file.type)) {
+    toast("error", errContentTips);
+    return false;
+  }
+
+  // 文件准备完毕之后的后续操作
+  fileReader.onload = () => {
+    let gbFileName = file.name;
+    let fileDataUrl = fileReader.result;
+    loadImage(fileDataUrl, gbFileName);
   }
   console.log("++++已执行 picture 函数++++");
 }
@@ -159,6 +207,8 @@ imgwrapper.ondrop = (event) => {
   picture(event);
   console.log('图片已添加完毕');
 }
+
+// 窗口改变时，图片适应窗口大小
 window.onresize = function() {
   console.log(window.innerWidth + ", " + window.innerHeight);
   let img = document.getElementById("simg");
@@ -176,6 +226,55 @@ window.onresize = function() {
     }
   }
 }
+
+/*
+======== 文件读取 ========
+*/
+
+function openDialog() {
+  ipcRenderer.send('openDialog');
+}
+
+ipcRenderer.on('selectedItem', (event, files) => {
+  let filePath = files.filePaths[0];
+  console.log(`通过原生方法打开文件：${filePath}`);//输出选择的文件
+})
+
+// html 5 文件读取
+
+var upimg = document.querySelector('#upimg');
+upimg.addEventListener('change', function (e) {
+  var files = this.files;
+  console.log(`通过 HTML5 读取文件：${files}`)
+  if (files.length) {
+    // 对文件进行处理，下面会讲解checkFile()会做什么
+    checkFile(this.files);
+
+  }
+});
+
+// 图片处理
+// 这里可以构造一个函数，输入二进制文件 ==> 输出 DataUrl
+function checkFile(files) {
+  var file = files[0];
+  // show表示<div id=‘show‘></div>，用来展示图片预览的
+  if (!/image\/\w+/.test(file.type)) {
+    toast("error", errContentTips);
+    return false;
+  }
+  // onload是异步操作
+  var file = files[0];
+  var reader = new FileReader();
+  reader.readAsDataURL(file);
+  reader.fileName = file.name;
+
+  reader.onload = () => {
+    let gbFileName = file.name;
+    let fileDataUrl = reader.result;
+    loadImage(fileDataUrl, gbFileName);
+  }
+}
+
 
 
 /*
@@ -214,7 +313,13 @@ const template = [
         }
       },
       { type: 'separator' },
-      { label: '打开' },
+      {
+        label: '打开...',
+        accelerator: 'CommandOrControl+o',
+        click: function () {
+          document.querySelector('#img1').click();
+        }
+      },
       { label: '清空画布' },
       { type: 'separator' },
       ...(isMac ? [
@@ -224,19 +329,39 @@ const template = [
       ])
     ]
   },
+  {
+    label: '编辑',
+    submenu: [
+      {role: "copy"},
+      {role: "paste"},
+      {role: "cut"},
+    ]
+  },
   // { role: '' }
   {
     label: '显示',
     submenu: [
       { 
+        label: '放大',
+        accelerator: 'CommandOrControl+=',
+        click: () => {
+          zoomIn();
+        } 
+      },
+      { 
+        label: '缩小',
+        accelerator: 'CommandOrControl+-',
+        click: () => {
+          zoomOut();
+        } 
+      },
+      { 
         label: '实际尺寸',
         accelerator: 'CommandOrControl+0',
         click: () => {
-          scaleImg(1)
+          zoomActual();
         }
-    },
-      { label: '放大' },
-      { label: '缩小' },
+      },
     ]
   },
   // { role: 'viewMenu' }
@@ -314,6 +439,15 @@ ipcRenderer.on('context-menu-command', (e, data) => {
     case 'scale-img':
       scaleImg(val);
       break;
+    case 'zoom-in':
+      zoomIn();
+      break;
+    case 'zoom-out':
+      zoomOut();
+      break;
+    case 'zoom-actual':
+      zoomActual();
+      break;
     case 'clean-canvas':
       clCanvas();
       console.log("清空已执行");
@@ -324,7 +458,19 @@ ipcRenderer.on('context-menu-command', (e, data) => {
     default:
       console.log(`Sorry, we are out of ${command}.`);
   }
-
-
 })
 
+/*
+======== 通知等 ========
+*/
+function toast(type, content){
+  let notifContent = document.getElementById("notif");
+  notifContent.classList.add('active');
+  notifContent.innerText = content;
+  notifContent.setAttribute("data-notif-type",type);
+  setTimeout(() => {
+    notifContent.classList.remove("active");
+    notifContent.innerText = "";
+    notifContent.setAttribute("data-notif-type", "");
+  }, 3000);
+}

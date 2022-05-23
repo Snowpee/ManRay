@@ -1,6 +1,7 @@
 const { MenuItem } = require('@electron/remote/main')
-const { app, BrowserWindow, Menu, Tray, ipcMain } = require('electron')
+const { app, BrowserWindow, Menu, Tray, ipcMain, dialog, ipcRenderer } = require('electron')
 // const path = require('path')
+const fs = require('fs');
 
 const createWindow = () => {
   // 创建浏览器窗口
@@ -57,19 +58,19 @@ const createWindow = () => {
           {
             label: '放大',
             click: () => {
-              event.sender.send('context-menu-command', { "name": "scale-img", "val": 1 })
+              event.sender.send('context-menu-command', { "name": "zoom-in" })
             }
           },
           {
             label: '缩小',
             click: () => {
-              event.sender.send('context-menu-command', { "name": "scale-img", "val": .5 })
+              event.sender.send('context-menu-command', { "name": "zoom-out" })
             }
           },
           {
             label: '实际大小',
             click: () => {
-              event.sender.send('context-menu-command', { "name": "scale-img", "val": 1 })
+              event.sender.send('context-menu-command', { "name": "zoom-actual" })
             }
           },
           {
@@ -127,6 +128,20 @@ const createWindow = () => {
     const menu = Menu.buildFromTemplate(template)
     menu.popup(BrowserWindow.fromWebContents(event.sender))
   })
+
+  // 打开文件
+  ipcMain.on('openDialog', (event, arg) => {
+    console.log("已接收打开文件命令")
+    dialog.showOpenDialog({
+
+    }).then(result => {
+      console.log(result);        //输出结果
+      result.filePaths.length > 0 && event.sender.send("selectedItem", result);
+      let data = fs.readFileSync(result.filePaths[0]);
+      console.log(data.type);        //输出结果
+
+    })
+  })
 }
 // Electron会在初始化完成并且准备好创建浏览器窗口时调用这个方法
 // 部分 API 在 ready 事件触发后才能使用。
@@ -171,3 +186,6 @@ app.whenReady().then(() => {
   tray.setToolTip('This is my application.')
   tray.setContextMenu(contextMenu)
 })
+
+// 打开文件相关
+
