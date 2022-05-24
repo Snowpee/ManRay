@@ -2,6 +2,9 @@ const { MenuItem } = require('@electron/remote/main')
 const { app, BrowserWindow, Menu, Tray, ipcMain, dialog, ipcRenderer } = require('electron')
 // const path = require('path')
 const fs = require('fs');
+const path = require('path');
+
+
 
 const createWindow = () => {
   // 创建浏览器窗口
@@ -29,7 +32,7 @@ const createWindow = () => {
   //接收通知 改变窗口高度
   const ipc = require('electron').ipcMain;
   ipc.on("setMainWindow", function (e, data) {
-    win.setSize(data.width, data.height);
+    win.setSize(data.width, data.height, false);
   })
   ipc.on("setAwaysOnTop", function (e, boolean) {
     win.setAlwaysOnTop(boolean);
@@ -133,13 +136,18 @@ const createWindow = () => {
   ipcMain.on('openDialog', (event, arg) => {
     console.log("已接收打开文件命令")
     dialog.showOpenDialog({
-
+      filters: [
+        { name: 'Images', extensions: ['jpg', 'png', 'gif', 'jpeg', 'tiff', 'webp'] },
+      ]
     }).then(result => {
       console.log(result);        //输出结果
       result.filePaths.length > 0 && event.sender.send("selectedItem", result);
-      let data = fs.readFileSync(result.filePaths[0]);
-      console.log(data.type);        //输出结果
-
+      let filePath = result.filePaths[0];
+      let fileName = filePath.substring(filePath.lastIndexOf('/') + 1);
+      var fileBase64 = fs.readFileSync(filePath, { encoding: 'base64' });
+      var fileDataUrl = 'data:image/*;base64,' + fileBase64;
+       //得到文件
+      event.sender.send("file-data-url", { 'fileDataUrl': fileDataUrl, 'fileName': fileName});
     })
   })
 }
@@ -172,20 +180,4 @@ app.on('activate', () => {
 // 您可以把应用程序其他的流程写在在此文件中
 // 代码 也可以拆分成几个文件，然后用 require 导入。
 
-//设置菜单
-
-let tray = null
-app.whenReady().then(() => {
-  tray = new Tray('img/AppIcon.icns')
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'Item1', type: 'radio' },
-    { label: 'Item2', type: 'radio' },
-    { label: 'Item3', type: 'radio', checked: true },
-    { label: 'Item4', type: 'radio' }
-  ])
-  tray.setToolTip('This is my application.')
-  tray.setContextMenu(contextMenu)
-})
-
-// 打开文件相关
 

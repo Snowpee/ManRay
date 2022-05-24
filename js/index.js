@@ -6,12 +6,15 @@ let { ipcRenderer } = require('electron')
 
 
 // 定义基本变量
+const imgwrapper = document.querySelector("#img1");
 var img = document.getElementById("simg");
 let titleBar = document.getElementById("gbtitle");
 let ctInfo = document.getElementById("ctinfo");
 let content = document.getElementsByClassName("content")[0]
 let dfContentTips = document.getElementById("ctinfo").innerHTML;
 let errContentTips = "错误：不支持的格式"
+const appRoot = document.getElementById("app");
+
 
 // 重置窗口基本属性
 rsWindow(420, 320);
@@ -147,7 +150,7 @@ function loadImage(fileDataUrl, gbFileName) {
   var strRegex = "(.jpg|.png|.jpeg)$"; //用于验证图片扩展名的正则表达式
   var imgdom = document.createElement("img");
   var re = new RegExp(strRegex);
-  // if (re.test(gbFileName.toLowerCase())) {
+
     console.log(`可接受的图片文件：${gbFileName}`);
     document.getElementById("app").className = "wrapper showimg";
     let img = document.querySelector("#simg");
@@ -170,11 +173,6 @@ function loadImage(fileDataUrl, gbFileName) {
       rsWindow(imgdom.width, imgdom.height);
       box.setAttribute("for", "");
     }
-  // } else {
-  //   content.className = "content";
-  //   toast('error', errContentTips);
-  //   ctInfo.innerHTML = dfContentTips;
-  // }
 }
 
 // 图片创建与替换相关
@@ -188,6 +186,8 @@ function picture(e) {
   // 非图片则不执行，返回 false
   if (!/image\/\w+/.test(file.type)) {
     toast("error", errContentTips);
+    content.className = "content";
+    ctInfo.innerHTML = dfContentTips;
     return false;
   }
 
@@ -201,7 +201,7 @@ function picture(e) {
 }
 
 // 给指定 dom 绑定函数
-const imgwrapper = document.querySelector("#img1");
+
 
 imgwrapper.ondrop = (event) => {
   picture(event);
@@ -239,8 +239,25 @@ ipcRenderer.on('selectedItem', (event, files) => {
   let filePath = files.filePaths[0];
   console.log(`通过原生方法打开文件：${filePath}`);//输出选择的文件
 })
+ipcRenderer.on('file-data-url', (event, result) => {
+  console.log(`已接收原生图片 base64：${result.fileDataUrl}`);//输出选择的文件
 
-// html 5 文件读取
+  let gbFileName = result.fileName;
+  let fileDataUrl = result.fileDataUrl;
+  loadImage(fileDataUrl, gbFileName);
+})
+
+
+imgwrapper.addEventListener('click', function () {
+  var isShowing = app.classList.contains('showimg');
+  if (isShowing) {
+    imgwrapper.setAttribute('onclick', 'return false;')
+  } else {
+    openDialog();
+  }
+});
+
+// html 5 文件读取【已废弃】
 
 var upimg = document.querySelector('#upimg');
 upimg.addEventListener('change', function (e) {
@@ -249,7 +266,6 @@ upimg.addEventListener('change', function (e) {
   if (files.length) {
     // 对文件进行处理，下面会讲解checkFile()会做什么
     checkFile(this.files);
-
   }
 });
 
@@ -317,7 +333,8 @@ const template = [
         label: '打开...',
         accelerator: 'CommandOrControl+o',
         click: function () {
-          document.querySelector('#img1').click();
+          // document.querySelector('#img1').click();
+          openDialog();
         }
       },
       { label: '清空画布' },
@@ -360,6 +377,24 @@ const template = [
         accelerator: 'CommandOrControl+0',
         click: () => {
           zoomActual();
+        }
+      },
+      { type: 'separator' },
+      {
+        label: '总在最上',
+        type: 'checkbox',
+        checked: false,
+        accelerator: '',
+        click: (menuItem) => {
+          console.log(menuItem.checked);
+          let isChecked = menuItem.checked;
+          if (!isChecked) {
+            pinWindow(false);
+            console.log('已设定为：不置顶')
+          } else {
+            pinWindow(true);
+            console.log('已设定为：置顶')
+          }
         }
       },
     ]
