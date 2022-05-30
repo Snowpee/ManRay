@@ -1,4 +1,4 @@
-const { BrowserWindow, Menu, MenuItem, screen } = require('@electron/remote')
+const { BrowserWindow, Menu, MenuItem, screen } = require('electron')
 // const { remote } = require('electron');
 // const { BrowserWindow, Menu, MenuItem, screen } = remote;
 
@@ -6,18 +6,27 @@ let { ipcRenderer } = require('electron')
 
 
 // 定义基本变量
-const imgwrapper = document.querySelector("#img1");
-var img = document.getElementById("simg");
+const imgwrapper = document.querySelector("#imgwrapper");
 let titleBar = document.getElementById("gbtitle");
 let ctInfo = document.getElementById("ctinfo");
 let content = document.getElementsByClassName("content")[0]
 let dfContentTips = document.getElementById("ctinfo").innerHTML;
 let errContentTips = "错误：不支持的格式"
 const appRoot = document.getElementById("app");
+const btnWinClose = document.getElementById("wcl");
+const btnWinMin = document.getElementById("wmin");
+const winDfWidth = 440;
+const winDfHeight = 340;
 
 
 // 重置窗口基本属性
-rsWindow(420, 320);
+rsWindow(winDfWidth, winDfHeight);
+pinWindow(false);
+winSetResizable(false);
+
+/*
+================ 定义一些函数 ================
+*/
 
 // 重置titlebar
 function rsTiltleBar(){
@@ -30,6 +39,10 @@ function rsWindow(w,h) {
   // remote.getCurrentWindow().setSize(newW , newH);
   ipcRenderer.send('setMainWindow', { "width": w, "height": h })
 }
+// 设定是否可调节窗口
+function winSetResizable(boolean){
+  ipcRenderer.send('win-set-resizable', boolean);
+}
 // 窗口置顶
 function pinWindow(boolean) {
   ipcRenderer.send('setAwaysOnTop', boolean );
@@ -39,20 +52,23 @@ function isPinWindow() {
 }
 // 清空画布
 function clCanvas() {
-  var elem = document.getElementById("img1");
-  while (elem.hasChildNodes()) //当elem下还存在子节点时 循环继续
+  while (imgwrapper.hasChildNodes()) //当elem下还存在子节点时 循环继续
   {
-    elem.removeChild(elem.firstChild);
+    imgwrapper.removeChild(imgwrapper.firstChild);
   }
   document.getElementById("app").className = "wrapper";
   dragLeave();
+}
+
+function clThroughWindow(boolean){
+  ipcRenderer.send('setClickThroughWindow', boolean);
 }
 
 // 图片有关
 
 // 改变图片尺寸
  function rsImg(w,h) {
-   var img = document.getElementById("img1").childNodes[0];
+   var img = imgwrapper.childNodes[0];
    img.width = w;
    img.height = h;
    rsWindow(w, h);
@@ -75,7 +91,7 @@ function scaleImg(n) {
   } else {
       rsWindow(fnWidth, fnHeight);
   }
-  console.log("========修改图片尺寸完成========")
+  console.log("================修改图片尺寸完成================")
 }
 
 // 放大，缩小图片
@@ -91,9 +107,16 @@ function zoomImg(type, elemId) {
         elem.setAttribute("data-zoom", --number);
         break;
       case 'actual':
-        number = Math.pow(number, 0) - 1; //  变量中的将 number 归零
+        number = Math.pow(number, 0) - 1;
         elem.setAttribute("data-zoom", number);
-        // var number = 0; // 此时重设内存中此变量值
+        break;
+      case 'half':
+        // - 诡异的问题，data-zoom 未被设定，或者被设定为 1
+        // number = Math.pow(number, 0) - .5;
+        // elem.setAttribute("data-zoom", Math.pow(number, 0) - .5);
+        break;
+      case 'double':
+        // elem.setAttribute("data-zoom", ++number * 2);
         break;
     }
     let dataZoom = elem.getAttribute("data-zoom");
@@ -118,32 +141,15 @@ function zoomImg(type, elemId) {
 var zoomIn = zoomImg("add", "simg");
 var zoomOut = zoomImg("minus", "simg");
 var zoomActual = zoomImg("actual", "simg");
+var zoomHalf = zoomImg("half", "simg");
+var zoomDouble = zoomImg("double", "simg");
 
-// 拖动事件相关
-function dragStart(e) {
-  e.dataTransfer.setData("id", e.target.id);//将img的id写入
+// 图片透明度
+function opacImg(e) {
+  let img = document.getElementById("simg");
+  img.setAttribute('style', `opacity:${e}`)
 }
 
-function dragOver(e) {
-  e.preventDefault();//阻止拖拽结束的默认行为，会把文件作为链接打开。
-  console.log("++++已拖放到合适位置++++");
-  console.log(ctInfo);
-  ctInfo.innerHTML = "松开吧";
-  content.className = "content active"
-}
-function dragLeave() {
-  console.log("++++已离开合适位置++++");
-  var ctInfo = document.getElementById("ctinfo");
-  ctInfo.innerHTML = dfContentTips;
-  content.className = "content"
-}
-function drop(e) {
-  var id = e.dataTransfer.getData("id");//得到img的id
-  var img = document.getElementById(id);//通过id得到img
-  var div = document.getElementById(e.target.id);//通过拖拽的目标的id得到要放入的div
-  div.appendChild(img);//将img加入div
-  console.log("++++这是++++");
-}
 // 图片进入后的操作
 function loadImage(fileDataUrl, gbFileName) {
   // 首先判断文件类型是否合法，合法则继续执行显示图片操作，否则报错
@@ -152,18 +158,15 @@ function loadImage(fileDataUrl, gbFileName) {
   var re = new RegExp(strRegex);
 
     console.log(`可接受的图片文件：${gbFileName}`);
-    document.getElementById("app").className = "wrapper showimg";
+  document.getElementById("app").classList.add("showimg");
     let img = document.querySelector("#simg");
-    var box = document.getElementById("img1");//通过id得到div
     // 设定标题栏为文件名
     titleBar.innerText = gbFileName;
     //判断是否有图片，无则为div添加一个图片，图片路径为拖拽的文件路径，有则替换
     if (img == null) {
       imgdom.src = fileDataUrl;
       imgdom.setAttribute("id", "simg");
-      box.appendChild(imgdom);
-      // 加载专有右键菜单
-      contextMenu('imgViewTemplate');
+      imgwrapper.appendChild(imgdom);
     } else {
       console.log("已有图片")
       img.src = fileDataUrl;
@@ -171,7 +174,12 @@ function loadImage(fileDataUrl, gbFileName) {
     imgdom.onload = () => {
       console.log(imgdom.width + " " + imgdom.height);
       rsWindow(imgdom.width, imgdom.height);
-      box.setAttribute("for", "");
+      imgwrapper.setAttribute("for", "");
+      // 设定窗口为可调整
+
+      winSetResizable(true);
+      console.log('已发送窗口可调氢请求')
+      console.log("++++已执行 picture 函数++++");
     }
 }
 
@@ -197,16 +205,52 @@ function picture(e) {
     let fileDataUrl = fileReader.result;
     loadImage(fileDataUrl, gbFileName);
   }
-  console.log("++++已执行 picture 函数++++");
 }
 
+// 简单的 toast 提示函数
+function toast(type, content) {
+  let notifContent = document.getElementById("notif");
+  notifContent.classList.add('active');
+  notifContent.innerText = content;
+  notifContent.setAttribute("data-notif-type", type);
+  setTimeout(() => {
+    notifContent.classList.remove("active");
+    notifContent.innerText = "";
+    notifContent.setAttribute("data-notif-type", "");
+  }, 3000);
+}
+
+
+/*
+================ 开始定义、绑定事件 ================
+*/
+// 绑定窗口按钮函数
+btnWinClose.onclick = () => {
+  ipcRenderer.send('windowsRendeCommand', {'name': 'close'})
+}
+btnWinMin.onclick = () => {
+  ipcRenderer.send('windowsRendeCommand', { 'name': 'min' })
+}
+
+
 // 给指定 dom 绑定函数
-
-
 imgwrapper.ondrop = (event) => {
   picture(event);
   console.log('图片已添加完毕');
 }
+imgwrapper.addEventListener("dragover", function (event) {
+  console.log('---- Over Me! ----');
+  event.preventDefault();//阻止拖拽结束的默认行为，会把文件作为链接打开。
+  ctInfo.innerHTML = "松开吧";
+  content.classList.add("active");
+});
+
+imgwrapper.addEventListener("dragleave", function (event) {
+  console.log('==== Leave Me! ====');
+  ctInfo.innerHTML = dfContentTips;
+  content.classList.remove("active");
+});
+
 
 // 窗口改变时，图片适应窗口大小
 window.onresize = function() {
@@ -227,27 +271,75 @@ window.onresize = function() {
   }
 }
 
+// 针对窗口阴影的判断
+
+// 鼠标在实际窗体里时，是否可视窗体上
+// - todo： 需要让窗口失去焦点后，仍监测鼠标事件。否则会出现拖放的 bug
+var mouseEvents = ['mouseover'] 
+// 将鼠标事件定义为数组，给元素添加多个
+mouseEvents.forEach(function (item, index) {
+  appRoot.addEventListener(item, (event) => {
+    let name = event.target.getAttribute("data-name");
+    let elem = event.target;
+    console.log(elem);
+
+    if (name == "wrapperWin") {
+      console.log('在实际窗体，但不在可视窗体');
+      ipcRenderer.send('setIgnoreMouse', true);
+    } else {
+      console.log('在可视窗体');
+      ipcRenderer.send('setIgnoreMouse', false);
+    }
+  });
+})
+// 鼠标是否离开实际窗体
+appRoot.addEventListener('mouseleave', (event) => {
+  let elem = event.target;
+  if (elem) {
+    console.log(elem);
+    console.log('已离开！');
+    ipcRenderer.send('setIgnoreMouse', false);
+  } else {
+    // 无法侦测离开之后的事件，留空
+  }
+})
+
+// 接收主进程「窗口焦点」通知
+ipcRenderer.on('winFocus', (event, vl) => {
+  switch(vl){
+    case true:
+      console.log('已聚焦！');
+      appRoot.classList.add('winfocus');
+      // ipcRenderer.send('setIgnoerMouse', false)
+      break;
+    case false:
+      console.log('已失去焦点！');
+      appRoot.classList.remove('winfocus');
+      break;
+  }
+})
 /*
-======== 文件读取 ========
+================ 文件读取 ================
 */
 
+// 向主进程发送命令
 function openDialog() {
   ipcRenderer.send('openDialog');
 }
-
+// 接收主进程返回的文件路径等数据（测试用）
 ipcRenderer.on('selectedItem', (event, files) => {
   let filePath = files.filePaths[0];
   console.log(`通过原生方法打开文件：${filePath}`);//输出选择的文件
 })
+// 接收主进程返回的最终图片 bese64 数据
 ipcRenderer.on('file-data-url', (event, result) => {
   console.log(`已接收原生图片 base64：${result.fileDataUrl}`);//输出选择的文件
-
   let gbFileName = result.fileName;
   let fileDataUrl = result.fileDataUrl;
   loadImage(fileDataUrl, gbFileName);
 })
 
-
+// 点击上传的相关流程
 imgwrapper.addEventListener('click', function () {
   var isShowing = app.classList.contains('showimg');
   if (isShowing) {
@@ -257,212 +349,49 @@ imgwrapper.addEventListener('click', function () {
   }
 });
 
-// html 5 文件读取【已废弃】
-
-var upimg = document.querySelector('#upimg');
-upimg.addEventListener('change', function (e) {
-  var files = this.files;
-  console.log(`通过 HTML5 读取文件：${files}`)
-  if (files.length) {
-    // 对文件进行处理，下面会讲解checkFile()会做什么
-    checkFile(this.files);
+// 主菜单打开的流程
+ipcRenderer.on('menuCommand',(event, data) => {
+  switch(data.name){
+    case 'open-file':
+      openDialog();
+      break; 
+    case 'zoom-in':
+      zoomIn();
+      break;
+    case 'zoom-out':
+      zoomOut();
+      break;
+    case 'zoom-actual':
+      zoomActual();
+      break;
+    case 'pin-window':
+      pinWindow(data.vl);
+      break;
   }
-});
-
-// 图片处理
-// 这里可以构造一个函数，输入二进制文件 ==> 输出 DataUrl
-function checkFile(files) {
-  var file = files[0];
-  // show表示<div id=‘show‘></div>，用来展示图片预览的
-  if (!/image\/\w+/.test(file.type)) {
-    toast("error", errContentTips);
-    return false;
-  }
-  // onload是异步操作
-  var file = files[0];
-  var reader = new FileReader();
-  reader.readAsDataURL(file);
-  reader.fileName = file.name;
-
-  reader.onload = () => {
-    let gbFileName = file.name;
-    let fileDataUrl = reader.result;
-    loadImage(fileDataUrl, gbFileName);
-  }
-}
+})
 
 
 
 /*
-======== 全局菜单 ========
-*/
-
-const isMac = process.platform === 'darwin'
-
-const template = [
-  // { role: 'appMenu' }
-  ...(isMac ? [{
-    label: app.name,
-    submenu: [
-      { label: '关于', role: 'about' },
-      { type: 'separator' },
-      { label: '服务', role: 'services' },
-      { type: 'separator' },
-      { label: '隐藏', role: 'hide' },
-      { label: '隐藏其它', role: 'hideOthers' },
-      { label: '全部显示', role: 'unhide' },
-      { type: 'separator' },
-      { label: '退出', role: 'quit' }
-    ]
-  }] : []),
-  // { role: 'fileMenu' }
-  {
-    label: '文件',
-    submenu: [
-      { 
-        label: '新建窗口', 
-        role: 'new',
-        click: function(){
-
-          // do sth
-
-        }
-      },
-      { type: 'separator' },
-      {
-        label: '打开...',
-        accelerator: 'CommandOrControl+o',
-        click: function () {
-          // document.querySelector('#img1').click();
-          openDialog();
-        }
-      },
-      { label: '清空画布' },
-      { type: 'separator' },
-      ...(isMac ? [
-        { label: '关闭', role: 'close' }
-      ]:[
-        { role: 'quit' }
-      ])
-    ]
-  },
-  {
-    label: '编辑',
-    submenu: [
-      {role: "copy"},
-      {role: "paste"},
-      {role: "cut"},
-    ]
-  },
-  // { role: '' }
-  {
-    label: '显示',
-    submenu: [
-      { 
-        label: '放大',
-        accelerator: 'CommandOrControl+=',
-        click: () => {
-          zoomIn();
-        } 
-      },
-      { 
-        label: '缩小',
-        accelerator: 'CommandOrControl+-',
-        click: () => {
-          zoomOut();
-        } 
-      },
-      { 
-        label: '实际尺寸',
-        accelerator: 'CommandOrControl+0',
-        click: () => {
-          zoomActual();
-        }
-      },
-      { type: 'separator' },
-      {
-        label: '总在最上',
-        type: 'checkbox',
-        checked: false,
-        accelerator: '',
-        click: (menuItem) => {
-          console.log(menuItem.checked);
-          let isChecked = menuItem.checked;
-          if (!isChecked) {
-            pinWindow(false);
-            console.log('已设定为：不置顶')
-          } else {
-            pinWindow(true);
-            console.log('已设定为：置顶')
-          }
-        }
-      },
-    ]
-  },
-  // { role: 'viewMenu' }
-  {
-    label: '视图',
-    submenu: [
-      { 
-        label: '清空画布',
-        role: 'reload'
-       },
-      { role: 'forceReload' },
-      { role: 'toggleDevTools' },
-    ]
-  },
-  // { role: 'windowMenu' }
-  {
-    label: '窗口',
-    submenu: [
-      { role: 'minimize' },
-      { role: 'zoom' },
-      { type: 'separator' },
-      { type: 'separator' },
-      ...(isMac ? [
-        { type: 'separator' },
-        { role: 'front' },
-        { type: 'separator' },
-        { role: 'window' }
-      ] : [
-        { role: 'close' }
-      ])
-    ]
-  },
-  {
-    label: '帮助',
-    role: 'help',
-    submenu: [
-      {
-        label: 'Learn More',
-        click: async () => {
-          const { shell } = require('electron')
-          await shell.openExternal('https://electronjs.org')
-        }
-      }
-    ]
-  }
-]
-
-const menu = Menu.buildFromTemplate(template)
-Menu.setApplicationMenu(menu)
-
-
-/*
-======== 右键菜单 ========
+================ 右键菜单 ================
 */
 // renderer
-function contextMenu(tempName) {
-  window.addEventListener('contextmenu', (e) => {
+function contextMenu() {
+  content.addEventListener('contextmenu', (e) => {
+    let isImgActive = appRoot.classList.contains('showimg');
+    // 判断 content 窗口状态，加载专有右键菜单
+    if (isImgActive) {
+      var tempName = 'imgViewTemplate';
+    } else {
+      var tempName = 'mainTemplate';
+    }
     console.log(`开始执行显示菜单命令：${tempName}`)
     e.preventDefault()
     ipcRenderer.send('show-context-menu', tempName)
     console.log(`已执行完毕：${tempName}`)
   })
 }
-// 这里先注释掉，默认展示一个菜单，但不知道怎么回事，每次都自己运行一次取代了自定义菜单。
-// let mainMenu = contextMenu('mainTemplate')
-// window.onload = mainMenu
+contextMenu()
 
 // 接收主进程返回的数据
 ipcRenderer.on('context-menu-command', (e, data) => {
@@ -471,6 +400,9 @@ ipcRenderer.on('context-menu-command', (e, data) => {
   let command = data.name;
   let val = data.val;
   switch (command) {
+    case 'open-dialog':
+      openDialog();
+      break;
     case 'scale-img':
       scaleImg(val);
       break;
@@ -483,10 +415,16 @@ ipcRenderer.on('context-menu-command', (e, data) => {
     case 'zoom-actual':
       zoomActual();
       break;
+    case 'zoom-half':
+      zoomHalf();
+      break;
+    case 'zoom-double':
+      zoomDouble();
+      break;
     case 'clean-canvas':
       clCanvas();
       console.log("清空已执行");
-      rsWindow(420, 320);
+      rsWindow(winDfWidth, winDfHeight);
       console.log("已重置窗口大小");
       rsTiltleBar();
       break;
@@ -495,17 +433,3 @@ ipcRenderer.on('context-menu-command', (e, data) => {
   }
 })
 
-/*
-======== 通知等 ========
-*/
-function toast(type, content){
-  let notifContent = document.getElementById("notif");
-  notifContent.classList.add('active');
-  notifContent.innerText = content;
-  notifContent.setAttribute("data-notif-type",type);
-  setTimeout(() => {
-    notifContent.classList.remove("active");
-    notifContent.innerText = "";
-    notifContent.setAttribute("data-notif-type", "");
-  }, 3000);
-}

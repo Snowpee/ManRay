@@ -1,6 +1,6 @@
 {
   "name": "plankton",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "A simple desktop artboard to preview groups of pictures on the desktop. If you are an artist, maybe it will be useful to you.",
   "main": "main.js",
   "scripts": {
@@ -35,12 +35,15 @@
   "homepage": "https://github.com/Snowpee/ManRay#readme",
   "config": {
     "forge": {
-      "packagerConfig": {},
+      "packagerConfig": {
+        "name": "PlankTon",
+        "icon": "img/AppIcon.icns"
+      },
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "plankton"
+            "name": "PlankTon"
           }
         },
         {
