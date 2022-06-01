@@ -279,29 +279,24 @@ var mouseEvents = ['mouseover']
 // 将鼠标事件定义为数组，给元素添加多个
 mouseEvents.forEach(function (item, index) {
   appRoot.addEventListener(item, (event) => {
+    event.preventDefault();
     let name = event.target.getAttribute("data-name");
     let elem = event.target;
     console.log(elem);
 
     if (name == "wrapperWin") {
       console.log('在实际窗体，但不在可视窗体');
-      ipcRenderer.send('setIgnoreMouse', true);
+      // ipcRenderer.send('setIgnoreMouse', true);
     } else {
       console.log('在可视窗体');
-      ipcRenderer.send('setIgnoreMouse', false);
+      // ipcRenderer.send('setIgnoreMouse', false);
     }
   });
 })
 // 鼠标是否离开实际窗体
 appRoot.addEventListener('mouseleave', (event) => {
-  let elem = event.target;
-  if (elem) {
-    console.log(elem);
-    console.log('已离开！');
-    ipcRenderer.send('setIgnoreMouse', false);
-  } else {
-    // 无法侦测离开之后的事件，留空
-  }
+  console.log('已离开！appRoot!');
+  // ipcRenderer.send('setIgnoreMouse', false);
 })
 
 // 接收主进程「窗口焦点」通知
@@ -318,6 +313,8 @@ ipcRenderer.on('winFocus', (event, vl) => {
       break;
   }
 })
+
+
 /*
 ================ 文件读取 ================
 */
